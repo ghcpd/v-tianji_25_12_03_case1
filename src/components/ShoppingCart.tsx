@@ -7,6 +7,17 @@ interface ShoppingCartProps {
   onCheckout?: (items: CartItem[], total: number) => void;
   taxRate?: number;
   currency?: string;
+  /** Pre-populate cart items (useful for tests or prefilled carts) */
+  initialCartItems?: CartItem[];
+  /** Optional hook to expose cart actions (primarily for testing/integration) */
+  exposeActions?: (actions: {
+    addToCart: (product: Product, quantity?: number) => void;
+    removeFromCart: (productId: string) => void;
+    updateQuantity: (productId: string, quantity: number) => void;
+    clearCart: () => void;
+    applyDiscountCode: () => Promise<void> | void;
+    handleCheckout: () => void;
+  }) => void;
 }
 
 export const ShoppingCart: React.FC<ShoppingCartProps> = ({
@@ -14,8 +25,10 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
   onCheckout,
   taxRate = 0.1,
   currency = 'USD',
+  initialCartItems = [],
+  exposeActions,
 }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
   const [discountCode, setDiscountCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<DiscountCode | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -77,6 +90,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }
   }, [discountCode]);
 
+
   const subtotal = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [cartItems]);
@@ -102,7 +116,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
     return taxableAmount + taxAmount;
   }, [taxableAmount, taxAmount]);
 
-  const handleCheckout = () => {
+  const handleCheckout = useCallback(() => {
     if (cartItems.length === 0) {
       alert('Cart is empty');
       return;
@@ -115,7 +129,21 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
 
     onCheckout?.(cartItems, total);
     setShowCheckout(true);
-  };
+  }, [cartItems, total, onCheckout]);
+
+  // Expose actions for tests/integration
+  React.useEffect(() => {
+    if (exposeActions) {
+      exposeActions({
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        applyDiscountCode,
+        handleCheckout,
+      });
+    }
+  }, [exposeActions, addToCart, removeFromCart, updateQuantity, clearCart, applyDiscountCode, handleCheckout]);
 
   const getItemCount = () => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);

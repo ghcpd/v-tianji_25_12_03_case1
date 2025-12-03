@@ -1,4 +1,8 @@
-import { deepClone, groupBy, chunk, unique, sortBy, randomId } from '../helpers';
+import { deepClone, groupBy, chunk, unique, sortBy, randomId, debounce, throttle, sleep, retry } from '../helpers';
+
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 describe('deepClone', () => {
   it('should clone primitive values', () => {
@@ -64,5 +68,89 @@ describe('randomId', () => {
   it('should generate id of specified length', () => {
     const id = randomId(10);
     expect(id).toHaveLength(10);
+  });
+});
+
+describe('debounce', () => {
+  beforeEach(() => jest.useFakeTimers());
+
+  it('should debounce function calls', () => {
+    const fn = jest.fn();
+    const debounced = debounce(fn, 500);
+
+    debounced();
+    debounced();
+    expect(fn).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(500);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('throttle', () => {
+  beforeEach(() => jest.useFakeTimers());
+
+  it('should throttle function calls', () => {
+    const fn = jest.fn();
+    const throttled = throttle(fn, 500);
+
+    throttled();
+    throttled();
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    jest.advanceTimersByTime(500);
+    throttled();
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('unique with key', () => {
+  it('should remove duplicates based on key', () => {
+    const arr = [
+      { id: 1, name: 'a' },
+      { id: 1, name: 'b' },
+      { id: 2, name: 'c' },
+    ];
+    expect(unique(arr, 'id')).toEqual([
+      { id: 1, name: 'a' },
+      { id: 2, name: 'c' },
+    ]);
+  });
+});
+
+describe('sortBy descending', () => {
+  it('should sort in descending order', () => {
+    const items = [{ value: 1 }, { value: 3 }, { value: 2 }];
+    const sorted = sortBy(items, 'value', 'desc');
+    expect(sorted.map(i => i.value)).toEqual([3, 2, 1]);
+  });
+});
+
+describe('sleep', () => {
+  beforeEach(() => jest.useFakeTimers());
+
+  it('resolves after given time', async () => {
+    const promise = sleep(500);
+    jest.advanceTimersByTime(500);
+    await expect(promise).resolves.toBeUndefined();
+  });
+});
+
+describe('retry', () => {
+  it('retries failing function and eventually succeeds', async () => {
+    const fn = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('fail1'))
+      .mockRejectedValueOnce(new Error('fail2'))
+      .mockResolvedValue('success');
+
+    await expect(retry(fn, 3, 1)).resolves.toBe('success');
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it('throws after max attempts', async () => {
+    const fn = jest.fn().mockRejectedValue(new Error('fail'));
+    await expect(retry(fn, 2, 1)).rejects.toThrow('fail');
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 });
