@@ -1,4 +1,4 @@
-import { formatCurrency, calculateTax, calculateDiscount, calculateShipping, applyBulkDiscount } from '../pricing';
+import { formatCurrency, calculateTax, calculateDiscount, calculateShipping, applyBulkDiscount, calculateInstallmentPayment } from '../pricing';
 
 describe('formatCurrency', () => {
   it('should format USD currency correctly', () => {
@@ -65,5 +65,33 @@ describe('applyBulkDiscount', () => {
 
   it('should apply no discount for less than 20 items', () => {
     expect(applyBulkDiscount(10, 10)).toBe(10);
+  });
+});
+
+describe('calculateInstallmentPayment', () => {
+  it('should calculate monthly payments for typical loan', () => {
+    const payment = calculateInstallmentPayment(1200, 12, 12); // 12 months, 12% annual
+    expect(typeof payment).toBe('number');
+    expect(payment).toBeGreaterThan(0);
+  });
+
+  it('should return principal/months when annualRate is 0', () => {
+    expect(calculateInstallmentPayment(1200, 0, 12)).toBe(100);
+  });
+
+  it('should return Infinity when months is 0', () => {
+    // this reproduces current function behavior (division by zero)
+    expect(calculateInstallmentPayment(1200, 5, 0)).toBe(Infinity);
+  });
+});
+
+describe('calculateDiscount extra cases', () => {
+  it('should accept case-insensitive codes', () => {
+    expect(calculateDiscount('save10', 10)).not.toBeNull();
+  });
+
+  it('should return FLAT50 only when min purchase met', () => {
+    expect(calculateDiscount('FLAT50', 199)).toBeNull();
+    expect(calculateDiscount('FLAT50', 200)).not.toBeNull();
   });
 });

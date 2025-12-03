@@ -1,4 +1,4 @@
-import { validateEmail, validatePhone, validatePassword, validateCreditCard, validatePostalCode } from '../validation';
+import { validateEmail, validatePhone, validatePassword, validateCreditCard, validatePostalCode, validateUrl, sanitizeInput } from '../validation';
 
 describe('validateEmail', () => {
   it('should return true for valid email addresses', () => {
@@ -77,5 +77,28 @@ describe('validatePostalCode', () => {
   it('should validate UK postal codes', () => {
     expect(validatePostalCode('SW1A 1AA', 'UK')).toBe(true);
     expect(validatePostalCode('M1 1AE', 'UK')).toBe(true);
+  });
+
+  it('should validate Canadian postal codes', () => {
+    expect(validatePostalCode('A1A 1A1', 'CA')).toBe(true);
+    expect(validatePostalCode('Z1Z1Z1', 'CA')).toBe(true);
+  });
+
+  it('should return false for unsupported countries', () => {
+    expect(validatePostalCode('12345', 'XX')).toBe(false);
+  });
+});
+
+describe('validateUrl and sanitizeInput', () => {
+  it('validateUrl returns true for valid urls and false otherwise', () => {
+    expect(validateUrl('https://example.com')).toBe(true);
+    expect(validateUrl('ftp://example.com')).toBe(true);
+    expect(validateUrl('not-a-url')).toBe(false);
+    expect(validateUrl('')).toBe(false);
+  });
+
+  it('sanitizeInput removes tags and trims whitespace', () => {
+    expect(sanitizeInput('  <script>alert(1)</script> hello  ')).toBe('alert(1) hello');
+    expect(sanitizeInput('<b>bold</b>')).toBe('bold');
   });
 });
