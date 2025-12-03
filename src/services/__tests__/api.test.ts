@@ -38,5 +38,26 @@ describe('API Service', () => {
       const result = await updateUserProfile('1', updatedData);
       expect(result).toEqual(mockResponse);
     });
+  
+    it('should delete user successfully', async () => {
+      mockedAxios.delete.mockResolvedValue({});
+
+      await expect(deleteUser('1')).resolves.toBeUndefined();
+      expect(mockedAxios.delete).toHaveBeenCalledWith('https://api.example.com/users/1');
+    });
+
+    it('should fetch users list with params', async () => {
+      const users = [{ id: '1', name: 'John' }];
+      mockedAxios.get.mockResolvedValue({ data: { users, total: 1 } });
+
+      const result = await fetchUsers({ page: 1, limit: 10, search: 'John' });
+      expect(result).toEqual({ users, total: 1 });
+      expect(mockedAxios.get).toHaveBeenCalledWith('https://api.example.com/users', { params: { page: 1, limit: 10, search: 'John' } });
+    });
+
+    it('should bubble errors when fetch fails', async () => {
+      mockedAxios.get.mockRejectedValue(new Error('timeout'));
+      await expect(fetchUsers()).rejects.toThrow('timeout');
+    });
   });
 });
