@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Product, CartItem, DiscountCode } from '@/types';
 import { calculateDiscount, calculateTax, formatCurrency } from '@/utils/pricing';
 
@@ -7,6 +7,15 @@ interface ShoppingCartProps {
   onCheckout?: (items: CartItem[], total: number) => void;
   taxRate?: number;
   currency?: string;
+  /** Optional hook to expose internal cart actions for integration/testing */
+  onReady?: (api: {
+    addToCart: (product: Product, quantity?: number) => void;
+    removeFromCart: (productId: string) => void;
+    updateQuantity: (productId: string, quantity: number) => void;
+    clearCart: () => void;
+    applyDiscountCode: () => Promise<void> | void;
+    handleCheckout: () => void;
+  }) => void;
 }
 
 export const ShoppingCart: React.FC<ShoppingCartProps> = ({
@@ -14,6 +23,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
   onCheckout,
   taxRate = 0.1,
   currency = 'USD',
+  onReady,
 }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discountCode, setDiscountCode] = useState('');
@@ -64,6 +74,10 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
     setDiscountCode('');
   }, []);
 
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, [cartItems]);
+
   const applyDiscountCode = useCallback(async () => {
     if (!discountCode.trim()) return;
 
@@ -75,11 +89,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
       setAppliedDiscount(null);
       alert('Invalid discount code');
     }
-  }, [discountCode]);
-
-  const subtotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }, [cartItems]);
+  }, [discountCode, subtotal]);
 
   const discountAmount = useMemo(() => {
     if (!appliedDiscount) return 0;
@@ -116,6 +126,12 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
     onCheckout?.(cartItems, total);
     setShowCheckout(true);
   };
+
+  useEffect(() => {
+    if (onReady) {
+      onReady({ addToCart, removeFromCart, updateQuantity, clearCart, applyDiscountCode, handleCheckout });
+    }
+  }, [onReady, addToCart, removeFromCart, updateQuantity, clearCart, applyDiscountCode]);
 
   const getItemCount = () => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);
