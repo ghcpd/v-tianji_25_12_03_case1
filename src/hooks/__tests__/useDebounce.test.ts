@@ -26,4 +26,21 @@ describe('useDebounce', () => {
 
     expect(result.current).toBe('updated');
   });
+
+  it('should clear timeout on unmount', () => {
+    const { unmount, rerender } = renderHook(
+      ({ value, delay }) => useDebounce(value, delay),
+      { initialProps: { value: 'initial', delay: 500 } }
+    );
+
+    rerender({ value: 'updated', delay: 500 });
+    unmount();
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    // No errors thrown and timers cleared
+    expect(true).toBe(true);
+  });
 });

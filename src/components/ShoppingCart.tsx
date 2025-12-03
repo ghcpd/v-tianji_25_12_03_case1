@@ -7,6 +7,7 @@ interface ShoppingCartProps {
   onCheckout?: (items: CartItem[], total: number) => void;
   taxRate?: number;
   currency?: string;
+  initialCartItems?: CartItem[];
 }
 
 export const ShoppingCart: React.FC<ShoppingCartProps> = ({
@@ -14,8 +15,9 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
   onCheckout,
   taxRate = 0.1,
   currency = 'USD',
+  initialCartItems = [],
 }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => initialCartItems ?? []);
   const [discountCode, setDiscountCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<DiscountCode | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
