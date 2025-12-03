@@ -39,4 +39,24 @@ describe('API Service', () => {
       expect(result).toEqual(mockResponse);
     });
   });
+
+  describe('deleteUser', () => {
+    it('should delete user successfully', async () => {
+      mockedAxios.delete.mockResolvedValue({});
+      await expect(deleteUser('1')).resolves.toBeUndefined();
+      expect(mockedAxios.delete).toHaveBeenCalledWith('https://api.example.com/users/1');
+    });
+  });
+
+  describe('fetchUsers', () => {
+    it('should fetch users with params', async () => {
+      const mockResponse = { users: [{ id: '1' }], total: 1 } as any;
+      mockedAxios.get.mockResolvedValue({ data: mockResponse });
+      const result = await fetchUsers({ page: 2, limit: 10, search: 'john' });
+      expect(result).toEqual(mockResponse);
+      expect(mockedAxios.get).toHaveBeenCalledWith('https://api.example.com/users', {
+        params: { page: 2, limit: 10, search: 'john' },
+      });
+    });
+  });
 });
