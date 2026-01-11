@@ -1,4 +1,5 @@
 import { validateEmail, validatePhone, validatePassword, validateCreditCard, validatePostalCode } from '../validation';
+import { sanitizeInput, validateUrl } from '../validation';
 
 describe('validateEmail', () => {
   it('should return true for valid email addresses', () => {
@@ -29,6 +30,17 @@ describe('validatePhone', () => {
   it('should return false for invalid phone numbers', () => {
     expect(validatePhone('123')).toBe(false);
     expect(validatePhone('abc')).toBe(false);
+  });
+});
+
+describe('sanitizeInput and validateUrl', () => {
+  it('should sanitize input by removing angle brackets and trimming', () => {
+    expect(sanitizeInput('  <script>test</script>  ')).toBe('scripttest/script');
+  });
+
+  it('should validate good URLs and reject bad ones', () => {
+    expect(validateUrl('https://example.com')).toBe(true);
+    expect(validateUrl('not-a-url')).toBe(false);
   });
 });
 
@@ -77,5 +89,10 @@ describe('validatePostalCode', () => {
   it('should validate UK postal codes', () => {
     expect(validatePostalCode('SW1A 1AA', 'UK')).toBe(true);
     expect(validatePostalCode('M1 1AE', 'UK')).toBe(true);
+  });
+
+  it('should validate Canadian postal codes', () => {
+    expect(validatePostalCode('K1A 0B1', 'CA')).toBe(true);
+    expect(validatePostalCode('12345', 'CA')).toBe(false);
   });
 });

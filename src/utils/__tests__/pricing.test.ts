@@ -1,4 +1,5 @@
 import { formatCurrency, calculateTax, calculateDiscount, calculateShipping, applyBulkDiscount } from '../pricing';
+import { calculateInstallmentPayment } from '../pricing';
 
 describe('formatCurrency', () => {
   it('should format USD currency correctly', () => {
@@ -39,6 +40,14 @@ describe('calculateDiscount', () => {
   it('should return null if minimum purchase not met', () => {
     expect(calculateDiscount('SAVE20', 50)).toBeNull();
   });
+
+  it('should respect maxDiscount for VIP codes', () => {
+    const discount = calculateDiscount('VIP30', 1000);
+    expect(discount).not.toBeNull();
+    if (discount) {
+      expect(discount.maxDiscount).toBe(150);
+    }
+  });
 });
 
 describe('calculateShipping', () => {
@@ -65,5 +74,21 @@ describe('applyBulkDiscount', () => {
 
   it('should apply no discount for less than 20 items', () => {
     expect(applyBulkDiscount(10, 10)).toBe(10);
+  });
+});
+
+describe('calculateInstallmentPayment', () => {
+  it('should calculate monthly payment for non-zero rate', () => {
+    const payment = calculateInstallmentPayment(1000, 12, 12);
+    expect(payment).toBeGreaterThan(0);
+  });
+
+  it('should divide principal by months when annual rate is 0', () => {
+    const payment = calculateInstallmentPayment(1200, 0, 12);
+    expect(payment).toBe(100);
+  });
+
+  it('should throw when months is 0', () => {
+    expect(() => calculateInstallmentPayment(1000, 5, 0)).toThrow('Months must be greater than 0');
   });
 });
